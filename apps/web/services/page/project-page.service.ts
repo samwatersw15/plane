@@ -53,6 +53,15 @@ export class ProjectPageService extends APIService {
     return this.patch(`/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/`, data)
       .then((response) => response?.data)
       .catch((error) => {
+        if (error?.response?.data?.error === "Page is locked" && typeof window !== "undefined") {
+          try {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "page_update_failed", failure_type: "page_locked" });
+          } catch (_analyticsError) {
+            // Analytics must not interfere with the failed page update response.
+          }
+        }
         throw error?.response?.data;
       });
   }
@@ -170,6 +179,15 @@ export class ProjectPageService extends APIService {
     return this.patch(`/api/workspaces/${workspaceSlug}/projects/${projectId}/pages/${pageId}/description/`, data)
       .then((response) => response?.data)
       .catch((error) => {
+        if (error?.response?.status === 400 && error?.response?.data?.error_code === 4701 && typeof window !== "undefined") {
+          try {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "page_update_failed", failure_type: "page_locked" });
+          } catch (_analyticsError) {
+            // Analytics must not interfere with the failed page description update response.
+          }
+        }
         throw error;
       });
   }

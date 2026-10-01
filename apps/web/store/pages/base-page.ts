@@ -280,7 +280,15 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
         });
       });
 
-      return await this.services.update(currentPage);
+      const response = await this.services.update(currentPage);
+      try {
+        const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+        analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+        analyticsWindow.dataLayer.push({ event: "page_update_succeeded", update_area: "details" });
+      } catch (_analyticsError) {
+        // Analytics must not interfere with the successful page update response.
+      }
+      return response;
     } catch (error) {
       runInAction(() => {
         Object.keys(pageData).forEach((key) => {
@@ -313,6 +321,13 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
 
     try {
       await this.services.updateDescription(document);
+      try {
+        const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+        analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+        analyticsWindow.dataLayer.push({ event: "page_update_succeeded", update_area: "description" });
+      } catch (_analyticsError) {
+        // Analytics must not interfere with the successful page description update response.
+      }
     } catch (error) {
       runInAction(() => {
         this.description_html = currentDescription;
@@ -416,6 +431,13 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
 
       if (shouldSync) {
         const response = await this.services.archive();
+        try {
+          const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+          analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+          analyticsWindow.dataLayer.push({ event: "page_archive_succeeded" });
+        } catch (_analyticsError) {
+          // Analytics must not interfere with the successful page archive response.
+        }
         runInAction(() => {
           this.archived_at = response.archived_at;
         });
@@ -532,7 +554,17 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
   /**
    * @description duplicate the page
    */
-  duplicate = async () => await this.services.duplicate();
+  duplicate = async () => {
+    const response = await this.services.duplicate();
+    try {
+      const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+      analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+      analyticsWindow.dataLayer.push({ event: "page_duplicate_succeeded" });
+    } catch (_analyticsError) {
+      // Analytics must not interfere with the successful page duplication response.
+    }
+    return response;
+  };
 
   /**
    * @description mutate multiple properties at once

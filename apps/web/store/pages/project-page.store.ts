@@ -305,6 +305,19 @@ export class ProjectPageStore implements IProjectPageStore {
       });
 
       const page = await this.service.create(workspaceSlug, projectId, pageData);
+      try {
+        const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+        analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+        analyticsWindow.dataLayer.push({
+          event: "page_create_succeeded",
+          has_parent: Boolean((page as TPage & { parent?: unknown }).parent),
+          description_present:
+            Boolean(pageData.description_html && pageData.description_html !== "<p></p>") ||
+            Boolean(pageData.description_json && Object.keys(pageData.description_json).length > 0),
+        });
+      } catch (_analyticsError) {
+        // Analytics must not interfere with the successful page creation response.
+      }
       runInAction(() => {
         if (page?.id) set(this.data, [page.id], new ProjectPage(this.store, page));
         this.loader = undefined;
