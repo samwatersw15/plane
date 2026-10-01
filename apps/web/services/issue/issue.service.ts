@@ -18,6 +18,8 @@ import type {
   TIssuesResponse,
   TIssueSubIssues,
 } from "@plane/types";
+// plane web imports
+import { pushDataLayer } from "@/lib/data-layer";
 // services
 import { APIService } from "@/services/api.service";
 
@@ -33,6 +35,13 @@ export class IssueService extends APIService {
     return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/${this.serviceType}/`, data)
       .then((response) => response?.data)
       .catch((error) => {
+        if (error?.response?.status === 400) {
+          try {
+            pushDataLayer("issue_create_failed", { failure_type: "validation_error" });
+          } catch {
+            // Analytics must not affect issue creation.
+          }
+        }
         throw error?.response?.data;
       });
   }

@@ -14,6 +14,7 @@ import { getAssetIdFromUrl } from "@plane/utils";
 // services
 import { APIService } from "@/services/api.service";
 import { FileUploadService } from "@/services/file-upload.service";
+import { pushDataLayer } from "@/lib/data-layer";
 
 export interface UnSplashImage {
   id: string;
@@ -82,6 +83,11 @@ export class FileService extends APIService {
     })
       .then(async (response) => {
         const signedURLResponse: TFileSignedURLResponse = response?.data;
+        try {
+          pushDataLayer("asset_upload_started", { entity_type: data.entity_type, mime_type: fileMetaData.type });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         const fileUploadPayload = generateFileUploadPayload(signedURLResponse, file);
         await this.fileUploadService.uploadFile(
           signedURLResponse.upload_data.url,
@@ -89,9 +95,26 @@ export class FileService extends APIService {
           uploadProgressHandler
         );
         await this.updateWorkspaceAssetUploadStatus(workspaceSlug.toString(), signedURLResponse.asset_id);
+        try {
+          pushDataLayer("asset_upload_succeeded", { entity_type: data.entity_type });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         return signedURLResponse;
       })
       .catch((error) => {
+        try {
+          const errorMessage = error?.response?.data?.error;
+          const failureType =
+            error?.response?.status === 400 && errorMessage === "Invalid entity type."
+              ? "invalid_entity_type"
+              : error?.response?.status === 400 && typeof errorMessage === "string" && errorMessage.startsWith("Invalid file type.")
+                ? "unsupported_file_type"
+                : undefined;
+          if (failureType) pushDataLayer("asset_upload_failed", { failure_type: failureType });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         throw error?.response?.data;
       });
   }
@@ -159,6 +182,11 @@ export class FileService extends APIService {
     })
       .then(async (response) => {
         const signedURLResponse: TFileSignedURLResponse = response?.data;
+        try {
+          pushDataLayer("asset_upload_started", { entity_type: data.entity_type, mime_type: fileMetaData.type });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         const fileUploadPayload = generateFileUploadPayload(signedURLResponse, file);
         await this.fileUploadService.uploadFile(
           signedURLResponse.upload_data.url,
@@ -166,9 +194,26 @@ export class FileService extends APIService {
           uploadProgressHandler
         );
         await this.updateProjectAssetUploadStatus(workspaceSlug, projectId, signedURLResponse.asset_id);
+        try {
+          pushDataLayer("asset_upload_succeeded", { entity_type: data.entity_type });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         return signedURLResponse;
       })
       .catch((error) => {
+        try {
+          const errorMessage = error?.response?.data?.error;
+          const failureType =
+            error?.response?.status === 400 && errorMessage === "Invalid entity type."
+              ? "invalid_entity_type"
+              : error?.response?.status === 400 && typeof errorMessage === "string" && errorMessage.startsWith("Invalid file type.")
+                ? "unsupported_file_type"
+                : undefined;
+          if (failureType) pushDataLayer("asset_upload_failed", { failure_type: failureType });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         throw error?.response?.data;
       });
   }
@@ -189,12 +234,34 @@ export class FileService extends APIService {
     })
       .then(async (response) => {
         const signedURLResponse: TFileSignedURLResponse = response?.data;
+        try {
+          pushDataLayer("asset_upload_started", { entity_type: data.entity_type, mime_type: fileMetaData.type });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         const fileUploadPayload = generateFileUploadPayload(signedURLResponse, file);
         await this.fileUploadService.uploadFile(signedURLResponse.upload_data.url, fileUploadPayload);
         await this.updateUserAssetUploadStatus(signedURLResponse.asset_id);
+        try {
+          pushDataLayer("asset_upload_succeeded", { entity_type: data.entity_type });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         return signedURLResponse;
       })
       .catch((error) => {
+        try {
+          const errorMessage = error?.response?.data?.error;
+          const failureType =
+            error?.response?.status === 400 && errorMessage === "Invalid entity type."
+              ? "invalid_entity_type"
+              : error?.response?.status === 400 && typeof errorMessage === "string" && errorMessage.startsWith("Invalid file type.")
+                ? "unsupported_file_type"
+                : undefined;
+          if (failureType) pushDataLayer("asset_upload_failed", { failure_type: failureType });
+        } catch {
+          // Analytics must not affect the upload.
+        }
         throw error?.response?.data;
       });
   }

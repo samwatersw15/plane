@@ -30,6 +30,7 @@ import { EIssueServiceType, EIssueLayoutTypes } from "@plane/types";
 // helpers
 import { convertToISODateString } from "@plane/utils";
 // plane web imports
+import { pushDataLayer } from "@/lib/data-layer";
 // services
 import { CycleService } from "@/services/cycle.service";
 import { IssueArchiveService, IssueService } from "@/services/issue";
@@ -532,6 +533,15 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   ) {
     // perform an API call
     const response = await this.issueService.createIssue(workspaceSlug, projectId, data);
+
+    try {
+      pushDataLayer("issue_create_succeeded", {
+        ...(response.priority !== null ? { priority: response.priority } : {}),
+        is_draft: response.is_draft,
+      });
+    } catch {
+      // Analytics must not affect issue creation.
+    }
 
     // add Issue to Store
     this.addIssue(response, shouldUpdateList);

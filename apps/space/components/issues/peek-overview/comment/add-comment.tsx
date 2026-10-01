@@ -54,6 +54,11 @@ export const AddComment = observer(function AddComment(props: Props) {
 
     await addIssueComment(anchor, issueId, formData)
       .then(async (res) => {
+        try {
+          const target = window as Window & { dataLayer?: { event: string }[] };
+          target.dataLayer = target.dataLayer ?? [];
+          target.dataLayer.push({ event: "board_comment_succeeded" });
+        } catch {}
         reset(defaultValues);
         editorRef.current?.clearEditor();
         if (uploadedAssetIds.length > 0) {

@@ -13,6 +13,7 @@ import { EIssueServiceType } from "@plane/types";
 // services
 import { APIService } from "@/services/api.service";
 import { FileUploadService } from "@/services/file-upload.service";
+import { pushDataLayer } from "@/lib/data-layer";
 
 export class IssueAttachmentService extends APIService {
   private fileUploadService: FileUploadService;
@@ -61,9 +62,21 @@ export class IssueAttachmentService extends APIService {
           uploadProgressHandler
         );
         await this.updateIssueAttachmentUploadStatus(workspaceSlug, projectId, issueId, signedURLResponse.asset_id);
+        try {
+          pushDataLayer("asset_upload_succeeded");
+        } catch {
+          // Analytics must not affect the upload.
+        }
         return signedURLResponse.attachment;
       })
       .catch((error) => {
+        try {
+          if (error?.response?.status === 400 && error?.response?.data?.error === "Invalid file type.") {
+            pushDataLayer("asset_upload_failed", { failure_type: "unsupported_file_type" });
+          }
+        } catch {
+          // Analytics must not affect the upload.
+        }
         throw error?.response?.data;
       });
   }
