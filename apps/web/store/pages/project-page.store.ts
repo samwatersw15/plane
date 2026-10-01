@@ -17,6 +17,7 @@ import { filterPagesByPageType, getPageName, orderPages, shouldFilterPage } from
 // plane web store
 // services
 import { ProjectPageService } from "@/services/page";
+import { pushDataLayer } from "@/lib/data-layer";
 // store
 import type { CoreRootStore } from "../root.store";
 import type { TProjectPage } from "./project-page";
@@ -305,6 +306,17 @@ export class ProjectPageStore implements IProjectPageStore {
       });
 
       const page = await this.service.create(workspaceSlug, projectId, pageData);
+      try {
+        pushDataLayer("page_create_succeeded", {
+          has_parent: Boolean("parent" in pageData && pageData.parent),
+          description_present: Boolean(
+            pageData.description_html ||
+              (pageData.description_json && Object.keys(pageData.description_json).length > 0)
+          ),
+        });
+      } catch {
+        // Analytics must not affect page creation.
+      }
       runInAction(() => {
         if (page?.id) set(this.data, [page.id], new ProjectPage(this.store, page));
         this.loader = undefined;

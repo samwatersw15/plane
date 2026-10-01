@@ -13,6 +13,7 @@ import type { TDocumentPayload, TLogoProps, TNameDescriptionLoader, TPage } from
 // plane web store
 import { ExtendedBasePage } from "@/store/pages/extended-base-page";
 import type { RootStore } from "@/store/root.store";
+import { pushDataLayer } from "@/lib/data-layer";
 // local imports
 import { PageEditorInstance } from "./page-editor-info";
 
@@ -202,6 +203,13 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
           .update({
             name,
           })
+          .then(() => {
+            try {
+              pushDataLayer("page_update_succeeded", { update_area: "details" });
+            } catch {
+              // Analytics must not affect page updates.
+            }
+          })
           .catch(() =>
             runInAction(() => {
               this.name = this.oldName;
@@ -280,7 +288,13 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
         });
       });
 
-      return await this.services.update(currentPage);
+      const updatedPage = await this.services.update(currentPage);
+      try {
+        pushDataLayer("page_update_succeeded", { update_area: "details" });
+      } catch {
+        // Analytics must not affect page updates.
+      }
+      return updatedPage;
     } catch (error) {
       runInAction(() => {
         Object.keys(pageData).forEach((key) => {
@@ -313,7 +327,19 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
 
     try {
       await this.services.updateDescription(document);
+      try {
+        pushDataLayer("page_update_succeeded", { update_area: "description" });
+      } catch {
+        // Analytics must not affect page updates.
+      }
     } catch (error) {
+      if ((error as { response?: { data?: { error_message?: string } } })?.response?.data?.error_message === "PAGE_LOCKED") {
+        try {
+          pushDataLayer("page_update_failed", { failure_type: "page_locked" });
+        } catch {
+          // Analytics must not affect page updates.
+        }
+      }
       runInAction(() => {
         this.description_html = currentDescription;
       });
@@ -419,6 +445,11 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
         runInAction(() => {
           this.archived_at = response.archived_at;
         });
+        try {
+          pushDataLayer("page_archive_succeeded");
+        } catch {
+          // Analytics must not affect page archiving.
+        }
       }
     } catch (error) {
       console.error(error);
@@ -473,6 +504,11 @@ export class BasePage extends ExtendedBasePage implements TBasePage {
       await this.services.update({
         logo_props: logoProps,
       });
+      try {
+        pushDataLayer("page_update_succeeded", { update_area: "details" });
+      } catch {
+        // Analytics must not affect page updates.
+      }
     } catch (error) {
       console.error("Error in updating page logo", error);
       runInAction(() => {

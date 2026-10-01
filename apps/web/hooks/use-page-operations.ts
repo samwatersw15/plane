@@ -10,6 +10,7 @@ import { IS_FAVORITE_MENU_OPEN } from "@plane/constants";
 import { setToast } from "@plane/blocks/toast";
 import { EPageAccess } from "@plane/types";
 import { copyUrlToClipboard } from "@plane/utils";
+import { pushDataLayer } from "@/lib/data-layer";
 // hooks
 import { useCollaborativePageActions } from "@/hooks/use-collaborative-page-actions";
 // store types
@@ -71,6 +72,9 @@ export const usePageOperations = (
       duplicate: async () => {
         try {
           await duplicate();
+          try {
+            pushDataLayer("page_duplicate_succeeded");
+          } catch {}
           setToast({
             type: "success",
             title: "Success!",

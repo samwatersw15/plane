@@ -414,6 +414,11 @@ export class IssueDetailStore implements IIssueDetailStore {
       });
 
       await this.issueService.addVote(anchor, issueID, data);
+      try {
+        const target = window as Window & { dataLayer?: { event: string }[] };
+        target.dataLayer = target.dataLayer ?? [];
+        target.dataLayer.push({ event: "board_vote_succeeded" });
+      } catch {}
     } catch (_error) {
       console.log("Failed to add issue vote");
       const issueVotes = await this.issueService.listVotes(anchor, issueID);

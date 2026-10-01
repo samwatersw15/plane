@@ -29,6 +29,7 @@ import type {
 } from "@plane/types";
 // services
 import { APIService } from "@/services/api.service";
+import { pushDataLayer } from "@/lib/data-layer";
 
 export class WorkspaceService extends APIService {
   constructor() {
@@ -77,8 +78,29 @@ export class WorkspaceService extends APIService {
 
   async inviteWorkspace(workspaceSlug: string, data: IWorkspaceBulkInviteFormData): Promise<any> {
     return this.post(`/api/workspaces/${workspaceSlug}/invitations/`, data)
-      .then((response) => response?.data)
+      .then((response) => {
+        pushDataLayer("workspace_invites_sent");
+        return response?.data;
+      })
       .catch((error) => {
+        if (error?.response?.status >= 400 && error?.response?.status < 500) {
+          const errorMessage = error?.response?.data?.error;
+          const failureType =
+            errorMessage === "Emails are required"
+              ? "missing_invitees"
+              : errorMessage === "You cannot invite a user with higher role"
+                ? "role_restriction"
+                : errorMessage === "Some users are already member of workspace"
+                  ? "already_member"
+                  : typeof errorMessage === "string" && errorMessage.startsWith("Invalid email -")
+                    ? "invalid_address"
+                    : undefined;
+          try {
+            pushDataLayer("workspace_invite_failed", failureType ? { failure_type: failureType } : {});
+          } catch {
+            // Analytics must not affect workspace invitations.
+          }
+        }
         throw error?.response?.data;
       });
   }
@@ -87,7 +109,14 @@ export class WorkspaceService extends APIService {
     return this.post(`/api/workspaces/${workspaceSlug}/invitations/${invitationId}/join/`, data, {
       headers: {},
     })
-      .then((response) => response?.data)
+      .then((response) => {
+        try {
+          pushDataLayer("workspace_invitation_responded", { accepted: data.accepted });
+        } catch {
+          // Analytics must not affect invitation responses.
+        }
+        return response?.data;
+      })
       .catch((error) => {
         throw error?.response?.data;
       });
