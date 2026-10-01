@@ -172,6 +172,15 @@ export class IssueDetailStore implements IIssueDetailStore {
     try {
       const issueDetails = this.getIssueById(issueID);
       const issueCommentResponse = await this.issueService.addComment(anchor, issueID, data);
+      if (typeof window !== "undefined") {
+        try {
+          const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+          analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+          analyticsWindow.dataLayer.push({ event: "board_comment_succeeded" });
+        } catch (_analyticsError) {
+          // Analytics must not interfere with successful comment creation.
+        }
+      }
       if (issueDetails) {
         runInAction(() => {
           set(this.details, [issueID, "comments"], [...(issueDetails?.comments ?? []), issueCommentResponse]);
@@ -414,6 +423,15 @@ export class IssueDetailStore implements IIssueDetailStore {
       });
 
       await this.issueService.addVote(anchor, issueID, data);
+      if (typeof window !== "undefined") {
+        try {
+          const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+          analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+          analyticsWindow.dataLayer.push({ event: "board_vote_succeeded" });
+        } catch (_analyticsError) {
+          // Analytics must not interfere with successful vote creation.
+        }
+      }
     } catch (_error) {
       console.log("Failed to add issue vote");
       const issueVotes = await this.issueService.listVotes(anchor, issueID);

@@ -77,8 +77,42 @@ export class WorkspaceService extends APIService {
 
   async inviteWorkspace(workspaceSlug: string, data: IWorkspaceBulkInviteFormData): Promise<any> {
     return this.post(`/api/workspaces/${workspaceSlug}/invitations/`, data)
-      .then((response) => response?.data)
+      .then((response) => {
+        try {
+          if (typeof window !== "undefined") {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "workspace_invites_sent" });
+          }
+        } catch {
+          // Analytics must not affect invitation delivery.
+        }
+        return response?.data;
+      })
       .catch((error) => {
+        if (error?.response?.status >= 400 && error?.response?.status < 500 && typeof window !== "undefined") {
+          try {
+            const errorMessage = error?.response?.data?.error;
+            const failureType =
+              errorMessage === "Emails are required"
+                ? "missing_invitees"
+                : errorMessage === "You cannot invite a user with higher role"
+                  ? "role_restriction"
+                  : errorMessage === "Some users are already member of workspace"
+                    ? "already_member"
+                    : typeof errorMessage === "string" && errorMessage.startsWith("Invalid email -")
+                      ? "invalid_address"
+                      : undefined;
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({
+              event: "workspace_invite_failed",
+              ...(failureType ? { failure_type: failureType } : {}),
+            });
+          } catch {
+            // Analytics must not affect the failed invitation response.
+          }
+        }
         throw error?.response?.data;
       });
   }
@@ -87,7 +121,18 @@ export class WorkspaceService extends APIService {
     return this.post(`/api/workspaces/${workspaceSlug}/invitations/${invitationId}/join/`, data, {
       headers: {},
     })
-      .then((response) => response?.data)
+      .then((response) => {
+        try {
+          if (typeof window !== "undefined") {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "workspace_invitation_responded", accepted: data.accepted });
+          }
+        } catch {
+          // Analytics must not affect the invitation response.
+        }
+        return response?.data;
+      })
       .catch((error) => {
         throw error?.response?.data;
       });

@@ -33,6 +33,15 @@ export class IssueService extends APIService {
     return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/${this.serviceType}/`, data)
       .then((response) => response?.data)
       .catch((error) => {
+        if (error?.response?.status === 400 && typeof window !== "undefined") {
+          try {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "issue_create_failed", failure_type: "validation_error" });
+          } catch (_analyticsError) {
+            // Analytics must not interfere with the failed issue creation response.
+          }
+        }
         throw error?.response?.data;
       });
   }

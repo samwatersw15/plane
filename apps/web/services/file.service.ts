@@ -82,6 +82,19 @@ export class FileService extends APIService {
     })
       .then(async (response) => {
         const signedURLResponse: TFileSignedURLResponse = response?.data;
+        try {
+          if (typeof window !== "undefined") {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({
+              event: "asset_upload_started",
+              entity_type: data.entity_type,
+              mime_type: fileMetaData.type,
+            });
+          }
+        } catch {
+          // Analytics must not affect asset uploads.
+        }
         const fileUploadPayload = generateFileUploadPayload(signedURLResponse, file);
         await this.fileUploadService.uploadFile(
           signedURLResponse.upload_data.url,
@@ -89,9 +102,35 @@ export class FileService extends APIService {
           uploadProgressHandler
         );
         await this.updateWorkspaceAssetUploadStatus(workspaceSlug.toString(), signedURLResponse.asset_id);
+        try {
+          if (typeof window !== "undefined") {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "asset_upload_succeeded", entity_type: data.entity_type });
+          }
+        } catch {
+          // Analytics must not affect asset uploads.
+        }
         return signedURLResponse;
       })
       .catch((error) => {
+        const responseError = error?.response?.data?.error;
+        const failureType =
+          responseError === "Invalid entity type."
+            ? "invalid_entity_type"
+            : responseError === "Invalid file type." ||
+                responseError === "Invalid file type. Only JPEG and PNG files are allowed."
+              ? "unsupported_file_type"
+              : undefined;
+        if (failureType && typeof window !== "undefined") {
+          try {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "asset_upload_failed", failure_type: failureType });
+          } catch {
+            // Analytics must not affect asset uploads.
+          }
+        }
         throw error?.response?.data;
       });
   }
@@ -159,6 +198,19 @@ export class FileService extends APIService {
     })
       .then(async (response) => {
         const signedURLResponse: TFileSignedURLResponse = response?.data;
+        try {
+          if (typeof window !== "undefined") {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({
+              event: "asset_upload_started",
+              entity_type: data.entity_type,
+              mime_type: fileMetaData.type,
+            });
+          }
+        } catch {
+          // Analytics must not affect asset uploads.
+        }
         const fileUploadPayload = generateFileUploadPayload(signedURLResponse, file);
         await this.fileUploadService.uploadFile(
           signedURLResponse.upload_data.url,
@@ -166,9 +218,35 @@ export class FileService extends APIService {
           uploadProgressHandler
         );
         await this.updateProjectAssetUploadStatus(workspaceSlug, projectId, signedURLResponse.asset_id);
+        try {
+          if (typeof window !== "undefined") {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "asset_upload_succeeded", entity_type: data.entity_type });
+          }
+        } catch {
+          // Analytics must not affect asset uploads.
+        }
         return signedURLResponse;
       })
       .catch((error) => {
+        const responseError = error?.response?.data?.error;
+        const failureType =
+          responseError === "Invalid entity type."
+            ? "invalid_entity_type"
+            : responseError === "Invalid file type." ||
+                responseError === "Invalid file type. Only JPEG and PNG files are allowed."
+              ? "unsupported_file_type"
+              : undefined;
+        if (failureType && typeof window !== "undefined") {
+          try {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "asset_upload_failed", failure_type: failureType });
+          } catch {
+            // Analytics must not affect asset uploads.
+          }
+        }
         throw error?.response?.data;
       });
   }
@@ -189,12 +267,51 @@ export class FileService extends APIService {
     })
       .then(async (response) => {
         const signedURLResponse: TFileSignedURLResponse = response?.data;
+        try {
+          if (typeof window !== "undefined") {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({
+              event: "asset_upload_started",
+              entity_type: data.entity_type,
+              mime_type: fileMetaData.type,
+            });
+          }
+        } catch {
+          // Analytics must not affect asset uploads.
+        }
         const fileUploadPayload = generateFileUploadPayload(signedURLResponse, file);
         await this.fileUploadService.uploadFile(signedURLResponse.upload_data.url, fileUploadPayload);
         await this.updateUserAssetUploadStatus(signedURLResponse.asset_id);
+        try {
+          if (typeof window !== "undefined") {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "asset_upload_succeeded", entity_type: data.entity_type });
+          }
+        } catch {
+          // Analytics must not affect asset uploads.
+        }
         return signedURLResponse;
       })
       .catch((error) => {
+        const responseError = error?.response?.data?.error;
+        const failureType =
+          responseError === "Invalid entity type."
+            ? "invalid_entity_type"
+            : responseError === "Invalid file type." ||
+                responseError === "Invalid file type. Only JPEG and PNG files are allowed."
+              ? "unsupported_file_type"
+              : undefined;
+        if (failureType && typeof window !== "undefined") {
+          try {
+            const analyticsWindow = window as Window & { dataLayer?: Record<string, unknown>[] };
+            analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+            analyticsWindow.dataLayer.push({ event: "asset_upload_failed", failure_type: failureType });
+          } catch {
+            // Analytics must not affect asset uploads.
+          }
+        }
         throw error?.response?.data;
       });
   }
